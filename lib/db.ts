@@ -53,9 +53,10 @@ function getDb(): Database.Database {
   if (_db) return _db;
   const dbPath =
     process.env.SQLITE_PATH ??
-    path.join(process.cwd(), 'quiz.db');
+    (process.env.VERCEL ? '/tmp/quiz.db' : path.join(process.cwd(), 'quiz.db'));
   _db = new Database(dbPath);
   _db.pragma('journal_mode = WAL');
+  initDb();
   return _db;
 }
 
