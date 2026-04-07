@@ -1,16 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
 import { buildMockTest, getRandomQuestions, type Category } from '@/lib/questions';
 
 /** Returns a set of questions for a new quiz session.
  * Questions are stripped of the correct answer before sending. */
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   const { mode } = await req.json();
 
   const validModes = ['mock_test', 'people', 'democracy', 'government', 'values'];

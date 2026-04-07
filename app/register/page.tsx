@@ -18,10 +18,11 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
 
+    const anonId = typeof window !== 'undefined' ? localStorage.getItem('quiz_anon_id') : null;
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, name, password }),
+      body: JSON.stringify({ email, name, password, anonId }),
     });
 
     const data = await res.json();

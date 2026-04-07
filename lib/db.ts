@@ -116,6 +116,18 @@ export function isAdmin(userId: string): boolean {
   return row?.is_admin === 1;
 }
 
+export function migrateAnonAttempts(anonId: string, userId: string, userName: string, userEmail: string): number {
+  const db = getDb();
+  const result = db
+    .prepare(
+      `UPDATE quiz_attempts SET user_id = ?, user_name = ?, user_email = ? WHERE user_id = ?`,
+    )
+    .run(userId, userName, userEmail, anonId);
+  db.prepare(`UPDATE quiz_answers SET attempt_id = attempt_id WHERE attempt_id IN (SELECT id FROM quiz_attempts WHERE user_id = ?)`)
+    .run(userId);
+  return result.changes;
+}
+
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 export function createUser(user: {

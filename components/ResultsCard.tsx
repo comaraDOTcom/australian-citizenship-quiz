@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import QuestionCard from './QuestionCard';
 import { CATEGORY_LABELS, type Category } from '@/lib/questions';
+import { useUser } from '@/lib/user-context';
 
 interface AnswerResult {
   questionId: string;
@@ -39,6 +40,8 @@ function formatTime(s: number) {
 export default function ResultsCard({ result }: { result: SubmitResult }) {
   const confettiFired = useRef(false);
   const [reviewIndex, setReviewIndex] = useState<number | null>(null);
+  const user = useUser();
+  const isAnon = user?.type === 'anon';
 
   useEffect(() => {
     if (result.passed && !confettiFired.current) {
@@ -214,14 +217,29 @@ export default function ResultsCard({ result }: { result: SubmitResult }) {
           </div>
         )}
 
+        {/* Save progress prompt for anon users */}
+        {isAnon && (
+          <div className="bg-au-gold/10 border border-au-gold/30 rounded-xl p-4 mb-6 flex items-center justify-between gap-4">
+            <div>
+              <p className="font-medium text-sm text-gray-800">Want to track your progress?</p>
+              <p className="text-xs text-gray-500">Create a free account to save scores across devices and see analytics.</p>
+            </div>
+            <Link href="/register" className="btn-primary text-sm px-4 py-2 whitespace-nowrap">
+              Sign up free
+            </Link>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3">
           <Link href="/quiz" className="btn-primary text-center flex-1">
             Try again →
           </Link>
-          <Link href="/dashboard" className="btn-secondary text-center flex-1">
-            View dashboard
-          </Link>
+          {!isAnon && (
+            <Link href="/dashboard" className="btn-secondary text-center flex-1">
+              View dashboard
+            </Link>
+          )}
         </div>
 
         {/* Share */}

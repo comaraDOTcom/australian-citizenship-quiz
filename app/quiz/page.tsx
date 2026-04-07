@@ -1,28 +1,43 @@
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { redirect } from 'next/navigation';
-import { getUserAttempts, initDb } from '@/lib/db';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useUser } from '@/lib/user-context';
 import QuizHub from '@/components/QuizHub';
+import type { DbAttempt } from '@/lib/db';
 
-export default async function QuizPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect('/login');
+export default function QuizPage() {
+  const user = useUser();
+  const [attempts, setAttempts] = useState<DbAttempt[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  initDb();
-  const attempts = await getUserAttempts(session.user.id);
+  useEffect(() => {
+    if (!user) return;
+    const params = user.type === 'anon' ? `?anonId=${user.id}` : '';
+    fetch(`/api/attempts${params}`)
+      .then((r) => r.json())
+      .then((d) => setAttempts(d.attempts ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [user]);
+
+  if (!user || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    );
+  }
 
   const stats = {
     totalAttempts: attempts.length,
-    bestScore: attempts.length
-      ? Math.max(...attempts.map((a) => a.percentage))
-      : 0,
+    bestScore: attempts.length ? Math.max(...attempts.map((a) => a.percentage)) : 0,
     passCount: attempts.filter((a) => a.passed).length,
     lastAttempt: attempts[0] ?? null,
   };
 
   return (
     <QuizHub
-      userName={session.user.name}
+      user={user}
       stats={stats}
       recentAttempts={attempts.slice(0, 5)}
     />

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import QuestionCard from './QuestionCard';
 import ResultsCard from './ResultsCard';
 import type { Category } from '@/lib/questions';
+import { useUser } from '@/lib/user-context';
 
 interface QuizQuestion {
   id: string;
@@ -48,6 +49,7 @@ interface SubmitResult {
 
 export default function QuizEngine() {
   const router = useRouter();
+  const user = useUser();
   const [session, setSession] = useState<QuizSession | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -102,6 +104,7 @@ export default function QuizEngine() {
           answers,
           questionIds: session.questions.map((q) => q.id),
           timeTakenSeconds,
+          ...(user?.type === 'anon' ? { anonId: user.id, anonName: user.name } : {}),
         }),
       });
       if (!res.ok) throw new Error('Submit failed');

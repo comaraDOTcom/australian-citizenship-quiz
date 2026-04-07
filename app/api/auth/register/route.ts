@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { createUser, getUserByEmail, initDb } from '@/lib/db';
+import { createUser, getUserByEmail, migrateAnonAttempts, initDb } from '@/lib/db';
 import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { email, name, password } = await req.json();
+    const { email, name, password, anonId } = await req.json();
 
     if (!email || !name || !password) {
       return NextResponse.json(
@@ -43,7 +43,12 @@ export async function POST(req: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 12);
     const id = crypto.randomUUID();
 
-    await createUser({ id, email, name, passwordHash });
+    createUser({ id, email, name, passwordHash });
+
+    // Migrate anonymous quiz attempts to the new account
+    if (anonId) {
+      migrateAnonAttempts(anonId, id, name, email);
+    }
 
     return NextResponse.json({ success: true, id });
   } catch (err) {

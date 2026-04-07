@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import type { DbAttempt } from '@/lib/db';
+import type { AppUser } from '@/lib/user-context';
 
 const MODES = [
   {
@@ -45,12 +46,12 @@ const MODES = [
     icon: '🤝',
     description: '10 questions · 15 min · Must get 100% in real test!',
     colour: 'from-amber-500 to-orange-600 text-white',
-    badge: '⚠️ HIGH STAKES',
+    badge: 'HIGH STAKES',
   },
 ];
 
 interface Props {
-  userName: string;
+  user: AppUser;
   stats: {
     totalAttempts: number;
     bestScore: number;
@@ -60,7 +61,7 @@ interface Props {
   recentAttempts: DbAttempt[];
 }
 
-export default function QuizHub({ userName, stats, recentAttempts }: Props) {
+export default function QuizHub({ user, stats, recentAttempts }: Props) {
   const router = useRouter();
   const [starting, setStarting] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -76,7 +77,6 @@ export default function QuizHub({ userName, stats, recentAttempts }: Props) {
       });
       if (!res.ok) throw new Error('Failed to start quiz');
       const data = await res.json();
-      // Store quiz session in sessionStorage for the quiz engine
       sessionStorage.setItem('quizSession', JSON.stringify(data));
       router.push('/quiz/active');
     } catch {
@@ -85,7 +85,8 @@ export default function QuizHub({ userName, stats, recentAttempts }: Props) {
     }
   }
 
-  const firstName = userName.split(' ')[0];
+  const firstName = user.name.split(' ')[0];
+  const isAnon = user.type === 'anon';
   const passRate =
     stats.totalAttempts > 0
       ? Math.round((stats.passCount / stats.totalAttempts) * 100)
@@ -100,24 +101,50 @@ export default function QuizHub({ userName, stats, recentAttempts }: Props) {
             🇦🇺 Citizenship Quiz
           </div>
           <div className="flex gap-3 items-center">
-            <Link href="/dashboard" className="text-sm text-gray-600 hover:text-au-green transition-colors">
-              Dashboard
-            </Link>
-            <button
-              onClick={() => signOut({ callbackUrl: '/' })}
-              className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              Sign out
-            </button>
+            {isAnon ? (
+              <>
+                <Link href="/login" className="text-sm text-gray-600 hover:text-au-green transition-colors">
+                  Sign in
+                </Link>
+                <Link href="/register" className="btn-primary text-sm px-4 py-2">
+                  Create account
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/dashboard" className="text-sm text-gray-600 hover:text-au-green transition-colors">
+                  Dashboard
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  Sign out
+                </button>
+              </>
+            )}
           </div>
         </div>
       </nav>
 
       <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Save progress banner for anon users */}
+        {isAnon && stats.totalAttempts > 0 && (
+          <div className="bg-au-gold/10 border border-au-gold/30 rounded-xl p-4 mb-6 flex items-center justify-between gap-4">
+            <div>
+              <p className="font-medium text-sm text-gray-800">Save your progress</p>
+              <p className="text-xs text-gray-500">Create a free account to keep your scores across devices and see the analytics dashboard.</p>
+            </div>
+            <Link href="/register" className="btn-primary text-sm px-4 py-2 whitespace-nowrap">
+              Sign up free
+            </Link>
+          </div>
+        )}
+
         {/* Greeting */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold">
-            G&apos;day, {firstName}! 👋
+            G&apos;day{!isAnon ? `, ${firstName}` : ''}! 👋
           </h1>
           {stats.totalAttempts === 0 ? (
             <p className="text-gray-500 mt-1">
@@ -176,7 +203,7 @@ export default function QuizHub({ userName, stats, recentAttempts }: Props) {
               <div className="text-sm opacity-80 mt-1">{mode.description}</div>
               {starting === mode.id && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-2xl">
-                  <div className="text-white font-bold">Loading…</div>
+                  <div className="text-white font-bold">Loading...</div>
                 </div>
               )}
             </button>
@@ -188,9 +215,11 @@ export default function QuizHub({ userName, stats, recentAttempts }: Props) {
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-bold text-lg">Recent attempts</h2>
-              <Link href="/dashboard" className="text-sm text-au-green hover:underline">
-                View all →
-              </Link>
+              {!isAnon && (
+                <Link href="/dashboard" className="text-sm text-au-green hover:underline">
+                  View all →
+                </Link>
+              )}
             </div>
             <div className="card overflow-hidden">
               <table className="w-full text-sm">

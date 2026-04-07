@@ -12,14 +12,10 @@ export default withAuth(
   },
 );
 
-// Protect quiz, dashboard, and API routes (except auth endpoints)
+// Protect dashboard and embed API (requires real account for Omni)
 export const config = {
   matcher: [
-    '/quiz/:path*',
     '/dashboard/:path*',
-    '/api/quiz/:path*',
-    '/api/attempts/:path*',
-    '/api/leaderboard/:path*',
     '/api/embed/:path*',
   ],
 };

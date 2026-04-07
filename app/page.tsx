@@ -37,6 +37,7 @@ const CATEGORIES = [
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
   if (session) redirect('/quiz');
+  // Anon users see the landing page — CTA goes straight to quiz
 
   return (
     <main className="min-h-screen">
@@ -54,7 +55,7 @@ export default async function HomePage() {
             <span className="text-au-gold font-semibold">Omni</span>.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/register" className="btn-gold text-lg px-8 py-4 rounded-xl font-bold">
+            <Link href="/quiz" className="btn-gold text-lg px-8 py-4 rounded-xl font-bold">
               Start Practising →
             </Link>
             <Link href="/login" className="btn-secondary border-white/40 text-white hover:bg-white/10 text-lg px-8 py-4 rounded-xl">
@@ -114,8 +115,8 @@ export default async function HomePage() {
             <strong>MotherDuck</strong> and embedded{' '}
             <strong>Omni</strong> dashboards.
           </p>
-          <Link href="/register" className="btn-primary text-lg inline-block">
-            Create your free account →
+          <Link href="/quiz" className="btn-primary text-lg inline-block">
+            Start practising now →
           </Link>
         </div>
       </section>

@@ -10,16 +10,24 @@ interface SubmitBody {
   answers: Record<string, number>;
   questionIds: string[];
   timeTakenSeconds: number;
+  anonId?: string;
+  anonName?: string;
 }
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
 
   const body: SubmitBody = await req.json();
-  const { mode, answers, questionIds, timeTakenSeconds } = body;
+  const { mode, answers, questionIds, timeTakenSeconds, anonId, anonName } = body;
+
+  // Determine user identity: authenticated or anonymous
+  const userId = session?.user?.id ?? anonId;
+  const userName = session?.user?.name ?? anonName ?? 'Guest';
+  const userEmail = session?.user?.email ?? 'anonymous';
+
+  if (!userId) {
+    return NextResponse.json({ error: 'No user identity' }, { status: 400 });
+  }
 
   if (!mode || !answers || !questionIds) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -52,9 +60,9 @@ export async function POST(req: NextRequest) {
   await saveAttempt(
     {
       id: attemptId,
-      user_id: session.user.id,
-      user_name: session.user.name,
-      user_email: session.user.email,
+      user_id: userId,
+      user_name: userName,
+      user_email: userEmail,
       mode,
       score: result.correct,
       total_questions: result.total,
