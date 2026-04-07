@@ -1158,29 +1158,47 @@ export function getQuestionsByCategory(category: Category): Question[] {
 export function getRandomQuestions(
   count: number,
   category?: Category,
+  exclude: string[] = [],
 ): Question[] {
-  const pool = category
+  const excludeSet = new Set(exclude);
+  let pool = category
     ? QUESTIONS.filter((q) => q.category === category)
     : QUESTIONS;
+  // Exclude seen questions; if not enough remain, reset and use full pool
+  const unseen = pool.filter((q) => !excludeSet.has(q.id));
+  if (unseen.length >= count) {
+    pool = unseen;
+  }
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, Math.min(count, shuffled.length));
 }
 
 /** Build a mock test matching the real Australian citizenship test format:
- * 20 questions, ~5 per category, ensuring values questions are included. */
-export function buildMockTest(): Question[] {
+ * 20 questions, ~5 per category, ensuring values questions are included.
+ * Excludes previously-seen questions when possible. */
+export function buildMockTest(exclude: string[] = []): Question[] {
+  const excludeSet = new Set(exclude);
   const { questionsPerCategory } = QUIZ_CONFIG;
   const selected: Question[] = [];
   for (const [cat, count] of Object.entries(questionsPerCategory) as [
     Category,
     number,
   ][]) {
-    const pool = QUESTIONS.filter((q) => q.category === cat);
+    const allInCat = QUESTIONS.filter((q) => q.category === cat);
+    const unseen = allInCat.filter((q) => !excludeSet.has(q.id));
+    // Use unseen if enough, otherwise fall back to full category pool
+    const pool = unseen.length >= count ? unseen : allInCat;
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
     selected.push(...shuffled.slice(0, count));
   }
   // Final shuffle so categories aren't in blocks
   return selected.sort(() => Math.random() - 0.5);
+}
+
+/** Get questions by specific IDs (for weak areas mode). */
+export function getQuestionsByIds(ids: string[]): Question[] {
+  const idSet = new Set(ids);
+  return QUESTIONS.filter((q) => idSet.has(q.id));
 }
 
 export function scoreQuiz(

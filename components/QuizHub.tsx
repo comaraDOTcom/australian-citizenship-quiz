@@ -59,9 +59,10 @@ interface Props {
     lastAttempt: DbAttempt | null;
   };
   recentAttempts: DbAttempt[];
+  incorrectQuestionCount: number;
 }
 
-export default function QuizHub({ user, stats, recentAttempts }: Props) {
+export default function QuizHub({ user, stats, recentAttempts, incorrectQuestionCount }: Props) {
   const router = useRouter();
   const [starting, setStarting] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -73,7 +74,10 @@ export default function QuizHub({ user, stats, recentAttempts }: Props) {
       const res = await fetch('/api/quiz/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode }),
+        body: JSON.stringify({
+          mode,
+          ...(user.type === 'anon' ? { anonId: user.id } : {}),
+        }),
       });
       if (!res.ok) throw new Error('Failed to start quiz');
       const data = await res.json();
@@ -209,6 +213,31 @@ export default function QuizHub({ user, stats, recentAttempts }: Props) {
             </button>
           ))}
         </div>
+
+        {/* Weak areas */}
+        {incorrectQuestionCount > 0 && (
+          <div className="mb-8">
+            <button
+              onClick={() => startQuiz('weak_areas')}
+              disabled={starting !== null}
+              className="w-full relative text-left p-5 rounded-2xl bg-gradient-to-br from-red-500 to-rose-700 text-white shadow hover:shadow-md active:scale-[0.98] transition-all duration-150 disabled:opacity-60"
+            >
+              <span className="absolute top-3 right-3 text-xs font-bold bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">
+                {incorrectQuestionCount} QUESTION{incorrectQuestionCount !== 1 ? 'S' : ''}
+              </span>
+              <div className="text-3xl mb-2">🔄</div>
+              <div className="font-bold text-lg">Practice Weak Areas</div>
+              <div className="text-sm opacity-80 mt-1">
+                Drill the questions you got wrong · Up to 10 questions
+              </div>
+              {starting === 'weak_areas' && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-2xl">
+                  <div className="text-white font-bold">Loading...</div>
+                </div>
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Recent attempts */}
         {recentAttempts.length > 0 && (

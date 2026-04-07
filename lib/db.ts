@@ -302,3 +302,40 @@ export function getUserWeeklyStats(userId: string): {
     passed_this_week: 0,
   };
 }
+
+/** Get all question IDs a user has seen in a given mode (most recent attempts first). */
+export function getSeenQuestionIds(userId: string, mode?: string): string[] {
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT qa.question_id
+       FROM quiz_answers qa
+       JOIN quiz_attempts att ON att.id = qa.attempt_id
+       WHERE att.user_id = ?
+         ${mode ? `AND att.mode = ?` : ''}
+       ORDER BY att.completed_at DESC`,
+    )
+    .all(...(mode ? [userId, mode] : [userId])) as { question_id: string }[];
+  return rows.map((r) => r.question_id);
+}
+
+/** Get question IDs the user has answered incorrectly (across all attempts).
+ *  Excludes questions they later answered correctly. */
+export function getIncorrectQuestionIds(userId: string): string[] {
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT qa.question_id
+       FROM quiz_answers qa
+       JOIN quiz_attempts att ON att.id = qa.attempt_id
+       WHERE att.user_id = ? AND qa.is_correct = 0
+         AND qa.question_id NOT IN (
+           SELECT qa2.question_id
+           FROM quiz_answers qa2
+           JOIN quiz_attempts att2 ON att2.id = qa2.attempt_id
+           WHERE att2.user_id = ? AND qa2.is_correct = 1
+         )`,
+    )
+    .all(userId, userId) as { question_id: string }[];
+  return rows.map((r) => r.question_id);
+}

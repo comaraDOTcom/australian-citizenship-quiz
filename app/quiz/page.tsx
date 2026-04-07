@@ -8,6 +8,7 @@ import type { DbAttempt } from '@/lib/db';
 export default function QuizPage() {
   const user = useUser();
   const [attempts, setAttempts] = useState<DbAttempt[]>([]);
+  const [incorrectQuestionCount, setIncorrectQuestionCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -15,7 +16,10 @@ export default function QuizPage() {
     const params = user.type === 'anon' ? `?anonId=${user.id}` : '';
     fetch(`/api/attempts${params}`)
       .then((r) => r.json())
-      .then((d) => setAttempts(d.attempts ?? []))
+      .then((d) => {
+        setAttempts(d.attempts ?? []);
+        setIncorrectQuestionCount(d.incorrectQuestionCount ?? 0);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user]);
@@ -40,6 +44,7 @@ export default function QuizPage() {
       user={user}
       stats={stats}
       recentAttempts={attempts.slice(0, 5)}
+      incorrectQuestionCount={incorrectQuestionCount}
     />
   );
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { getUserAttempts, initDb } from '@/lib/db';
+import { getUserAttempts, getIncorrectQuestionIds, initDb } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -14,5 +14,6 @@ export async function GET(req: NextRequest) {
 
   initDb();
   const attempts = getUserAttempts(userId);
-  return NextResponse.json({ attempts });
+  const incorrectQuestionCount = getIncorrectQuestionIds(userId).length;
+  return NextResponse.json({ attempts, incorrectQuestionCount });
 }
